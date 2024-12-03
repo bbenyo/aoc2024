@@ -1,7 +1,6 @@
 package bb.aoc2024.handler;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.log4j.Logger;
