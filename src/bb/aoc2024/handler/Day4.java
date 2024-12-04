@@ -29,7 +29,7 @@ public class Day4 implements InputHandler {
 
 	@Override
 	public void output() {
-		int xmasCount = search("XMAS");
+		int xmasCount = search(grid, "XMAS");
 		logger.info("XMAS Count: "+xmasCount);
 	}
 	
@@ -56,10 +56,10 @@ public class Day4 implements InputHandler {
 		}
 	}
 	
-	protected int search(String word) {
+	protected int search(Grid g, String word) {
 		// Scan grid for the first letter, then search in each cardinal direction
 		char firstLetter = word.charAt(0);
-		Optional<Location> findNext = grid.scan(firstLetter);
+		Optional<Location> findNext = g.scan(firstLetter);
 		int count = 0;
 		while (findNext.isPresent()) {
 			List<LocLetter> workList = new ArrayList<>();
@@ -75,7 +75,7 @@ public class Day4 implements InputHandler {
 					addNextLocations(workList, nxt, letterAt);
 				}
 			}
-			findNext = grid.scan(firstLetter);
+			findNext = g.scan(firstLetter);
 		}
 		return count;
 	}
