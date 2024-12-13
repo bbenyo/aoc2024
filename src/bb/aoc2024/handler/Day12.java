@@ -30,7 +30,11 @@ public class Day12 implements InputHandler {
 		
 		@Override
 		public String toString() {
-			return ""+label;
+			if (locs.isEmpty()) {
+				return ""+label;
+			} else {
+				return ""+label+" at "+locs.get(0);
+			}
 		}
 		
 		public int area() {
@@ -53,9 +57,16 @@ public class Day12 implements InputHandler {
 		}
 		
 		public long price() {
-			return area() * perimeter();
+			return (long)area() * perimeter();
 		}
 		
+		public boolean inRegion(Location l) {
+			Location l2 = l;
+			if (l instanceof LocationDirection) {
+				l2 = new Location(l);
+			}
+			return locs.contains(l2);
+		}
 	}
 	
 	@Override
