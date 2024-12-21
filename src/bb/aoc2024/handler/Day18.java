@@ -1,5 +1,7 @@
 package bb.aoc2024.handler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.log4j.Logger;
@@ -14,11 +16,12 @@ public class Day18 implements InputHandler {
 	static private Logger logger = Logger.getLogger(Day18.class.getName());
 
 	Grid map = new Grid();
-	int rocks = 12;
+	int rocks = 1024;
+	List<Location> bytes = new ArrayList<>();
 	
 	@Override
 	public void initialize() {
-		map.initialize(7, 7, '.');
+		map.initialize(71, 71, '.');
 	}
 
 	@Override
@@ -26,9 +29,10 @@ public class Day18 implements InputHandler {
 		if (line.trim().isEmpty()) {
 			return;
 		}
+		Location l = new Location(line);
+		bytes.add(l);
 		if (rocks > 0) {
 			rocks--;
-			Location l = new Location(line);
 			map.set(l, '#');
 		}
 	}
@@ -40,18 +44,23 @@ public class Day18 implements InputHandler {
 		}
 		
 		@Override
-		protected void addNeighbor(Location lup) {
-			Optional<Character> m = map.get(lup);
-			if (m.isEmpty() || (m.isPresent() && m.get() == '#')) {
-				return;
-			}
-			if (nodes.get(lup.toString()) == null) {
-				MNode m2 = new MNode(lup);
-				neighbors.add(m2);
-				nodes.put(lup.toString(), m2);
-			}
+		public Node createNode(Location l) {
+			return new MNode(l);
 		}
 		
+		@Override
+		public boolean isValidNode(Node n) {
+			Optional<Character> m = map.get(n);
+			if (m.isEmpty() || m.get() == '#') {
+				return false;
+			}
+			Node uNode = nodes.get(n.getLabel());
+			if (uNode != null && uNode.getG() <= n.getG()) {
+				return false;
+			}
+			return true;
+		}
+			
 		@Override
 		public int getGridSizeX() {
 			return map.getColumnCount(0);
@@ -62,8 +71,9 @@ public class Day18 implements InputHandler {
 			return map.getRowCount();
 		}
 		
+		@Override
 		protected void computeHScore() {
-			hScore = (70*70) - gScore;
+			hScore = computeHeuristic();
 		}
 	}
 	
