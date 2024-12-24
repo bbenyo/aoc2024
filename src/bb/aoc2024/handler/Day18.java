@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
+import bb.aoc.utils.Direction;
 import bb.aoc.utils.Grid;
 import bb.aoc.utils.InputHandler;
 import bb.aoc.utils.Location;
@@ -44,7 +45,7 @@ public class Day18 implements InputHandler {
 		}
 		
 		@Override
-		public Node createNode(Location l) {
+		public Node createNode(Location l, Direction d) {
 			return new MNode(l);
 		}
 		
