@@ -41,16 +41,18 @@ public class Day21 implements InputHandler {
 		}
 		
 		// Get the maximum X value for a Location
+		@Override
 		public int getGridSizeX() {
 			return 3;
 		}
 		
 		// Get the maximum Y value for a Location
+		@Override
 		public int getGridSizeY() {
 			return 4;
 		}
 		
-		public Node createNode(Location l, Direction d) {
+		 public Node createNode(Location l, Direction d) {
 			return new KeypadNode(l, d);
 		}
 		
@@ -59,6 +61,7 @@ public class Day21 implements InputHandler {
 			hScore = gScore;
 		}
 		
+		@Override
 		public String toString() {
 			if (c == '?') {
 				return super.toString();
@@ -66,6 +69,7 @@ public class Day21 implements InputHandler {
 			return ""+c;
 		}
 		
+		@Override
 		public boolean isValidNode(Node n) {
 			if (!super.isValidNode(n)) {
 				return false;
@@ -102,7 +106,7 @@ public class Day21 implements InputHandler {
 		
 		protected void addAllPaths(Collection<KeypadNode> oNodes, boolean doMinChanges) {
 			for (KeypadNode to : oNodes) {
-				if (this.c == to.c) {
+				if (this.c.equals(to.c)) {
 					continue;
 				}
 				if (isBlank(x,y)) {
@@ -214,13 +218,56 @@ public class Day21 implements InputHandler {
 	}
 	
 	public Map<Character, KeypadNode> getPad(int padNum) {
-		if (padNum == 1) {
+		if (padNum == 0) {
 			return keypad1;
 		} else if (padNum > 1) {
 			return keypad2;
 		}
 		return null;
 	}
+	
+	// Keypad index -> Map of path to shortest length
+	// We split paths by A, since every sequence must be moving from key1 to key2 then pressing A to press key2
+	// So each split is independent, since you're always ending on A
+	// Thus the cache should end up ~25 entries per level (5 key1 * 5 key2)
+	Map<Integer, Map<String, Long>> cache = new HashMap<>();
+
+	public long getShortestSubPathLength(String s, int padNum) {
+		if (padNum == (this.getRobotCount() + 1)) {
+			return s.length();
+		}
+		Map<String, Long> sCache = cache.computeIfAbsent(padNum, __ -> new HashMap<>());
+		Long cacheHit = sCache.get(s);
+		if (cacheHit != null) {
+			return cacheHit;
+		}
+		
+		String[] split = s.split("A");
+		long total = 0;
+		if (split.length == 0) {
+			// Just an "A"
+			split = new String[1];
+			split[0] = "";
+		}
+		for (String s2 : split) {
+			List<String> paths = getPaths(s2+"A", padNum+1);
+			if (paths.isEmpty()) {
+				throw new RuntimeException("Unable to find path for "+s2+" at level "+(padNum+1));
+			}
+			long minLen = Long.MAX_VALUE;
+			for (String p : paths) {
+				long shortest2 = getShortestSubPathLength(p, padNum+1);
+				if (shortest2 < minLen) {
+					minLen = shortest2;
+				}
+			}
+			total += minLen;
+		}
+		logger.info("Adding "+total+" to cache for "+s+" for level "+padNum);
+		sCache.put(s, total);
+		return total;		
+	}
+	
 	
 	public List<String> getPaths(String codeStr, int padNum) {
 		Map<Character, KeypadNode> pad = getPad(padNum);
@@ -263,9 +310,9 @@ public class Day21 implements InputHandler {
 	public void output() {
 		long complexityTotal = 0;
 		for (String code : codes) {
-			List<String> best = findHumanPress(code);
-			int comp = complexity(best, code);
-			logger.info("Complexity of "+code+": "+comp);
+			long shortest = findShortestHumanPress(code);
+			long comp = complexity(shortest, code);
+			logger.info("Complexity for "+code+" is "+comp+" with shortest length: "+shortest);
 			complexityTotal += comp;
 		}
 		logger.info("Total: "+complexityTotal);
@@ -275,24 +322,16 @@ public class Day21 implements InputHandler {
 		return 2;
 	}
 	
-	protected List<String> findHumanPress(String code) {
-		List<String> best = new ArrayList<>();
-		best.add(code);
-		for (int i=1; i<(getRobotCount() + 2); ++i) {
-			List<String> nxt = new ArrayList<>();
-			for (String s : best) {
-				List<String> p1 = getPaths(s, i);
-				nxt.addAll(p1);
-			}
-			best.clear();
-			best.addAll(nxt);
-		}
+	protected long findShortestHumanPress(String code) {
+		List<String> best = getPaths(code, 0);
+		
 		int minLen = Integer.MAX_VALUE;
 		for (String b : best) {
 			if (b.length() < minLen) {
 				minLen = b.length();
 			}
 		}
+		
 		List<String> shortest = new ArrayList<>();
 		for (String b : best) {
 			if (b.length() == minLen) {
@@ -301,16 +340,19 @@ public class Day21 implements InputHandler {
 			}
 		}
 		
-		return shortest;
+		// Now find the N robot pushes to generate the best code
+		Long minLenFinal = Long.MAX_VALUE;
+		for (String s2 : shortest) {
+			long sLen = getShortestSubPathLength(s2, 1);
+			if (sLen < minLenFinal) {
+				minLenFinal = sLen;
+			}
+		}
+		
+		return minLenFinal;
 	}
 	
-	public int complexity(List<String> best, String code) {
-		if (best.isEmpty()) {
-			return 0;
-		}
-		String b1 = best.get(0);
-		int len = b1.length();
-		
+	public long complexity(long shortest, String code) {
 		String codeNum = "";
 		for (int i=0; i<code.length(); ++i) {
 			if (code.charAt(i) == 'A') {
@@ -323,7 +365,7 @@ public class Day21 implements InputHandler {
 		}
 		
 		Integer codeNumInt = Utilities.parseIntOrNull(codeNum);
-		return len * codeNumInt;
+		return shortest * codeNumInt;
 	}
 
 }
