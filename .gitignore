@@ -5,3 +5,5 @@
 
 /data/input/*.txt
 /io.log
+/*.svg
+/*.dot
